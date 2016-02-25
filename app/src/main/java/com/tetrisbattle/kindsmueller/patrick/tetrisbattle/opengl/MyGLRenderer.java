@@ -18,6 +18,7 @@ import android.opengl.Matrix;
 import android.view.MotionEvent;
 
 import com.tetrisbattle.kindsmueller.patrick.tetrisbattle.R;
+import android.util.*;
 
 public class MyGLRenderer implements GLSurfaceView.Renderer {
 
@@ -41,13 +42,20 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
     // Misc
     Context mContext;
     long mLastTime;
+	
+	String log;
 
     public MyGLRenderer(Context c)
     {
         mContext = c;
         mLastTime = System.currentTimeMillis() + 100;
-
+		Log.i("A_RENDERER", "test");
     }
+	
+	public String logShader(){
+		
+		return log;
+	}
 
     public void onPause()
     {
@@ -195,10 +203,13 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
                 ShaderHelper.fs_Image);
 
         ShaderHelper.sp_Image = GLES20.glCreateProgram();
+		
         GLES20.glAttachShader(ShaderHelper.sp_Image, vertexShader);
         GLES20.glAttachShader(ShaderHelper.sp_Image, fragmentShader);
         GLES20.glLinkProgram(ShaderHelper.sp_Image);
 
+		
+		
         // Set our shader programm
         GLES20.glUseProgram(ShaderHelper.sp_Image);
     }
@@ -207,6 +218,7 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         vertices = scene.getVertices();
         uvs = scene.getUVs();
         indices = scene.getIndices();
+		updateScene();
     }
 
     public void updateScene()

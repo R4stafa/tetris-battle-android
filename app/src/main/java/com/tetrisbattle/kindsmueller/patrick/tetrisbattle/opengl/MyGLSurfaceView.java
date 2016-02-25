@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import android.graphics.*;
 import android.util.*;
 
-
+/**
+ * Created by Patrick on 19.02.2016.
+ */
 public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
 
     public static final int GRID_WIDTH = 18;
@@ -19,6 +21,8 @@ public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
     private final MyGLRenderer mRenderer;
     private Thread gameThread;
     private boolean alive;
+	private boolean fall;
+	private boolean prevent_freezing;
 
     private int grid[][];
 
@@ -30,7 +34,7 @@ public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
         setEGLContextClientVersion(2);
         mRenderer = new MyGLRenderer(context);
 		
-		
+		prevent_freezing = false;
 		
         grid = new int[GRID_WIDTH][GRID_HEIGHT];
 
@@ -40,29 +44,67 @@ public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
 
 
         setRenderer(mRenderer);
+		setRenderMode(RENDERMODE_CONTINUOUSLY);
     }
 
+	float oldX, oldY;
+	
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        if(e.getAction() == MotionEvent.ACTION_DOWN){
-			if(e.getX() < this.getWidth()/3){
-				quatron.push(-1, 0);
-			}
-			else if(e.getX() < this.getWidth()*2/3){
-				quatron.rotate();
+		if(e.getAction() == MotionEvent.ACTION_DOWN){
+			oldX = e.getX();
+			oldY = e.getY();
+		}
+        else if(e.getAction() == MotionEvent.ACTION_UP){
+			if(oldX-e.getX() > 10){
+				fall = true;
 			}
 			else{
-				quatron.push(1, 0);
+				if(e.getX() < this.getWidth()/3){
+					quatron.push(-1, 0);
+				}
+				else if(e.getX() < this.getWidth()*2/3){
+					quatron.rotate();
+				}
+				else{
+					quatron.push(1, 0);
+				}
+				prevent_freezing = true;
+				updateScene();
 			}
-            
-            updateScene();
+			
         }
         mRenderer.processTouchEvent(e);
         return true;
     }
+	
+	private void pushLeft(){
+		quatron.push(-1, 0);
+		if(checkCollision()){
+			quatron.push(1, 0);
+		}
+	}
+	
+	private void pushRight(){
+		quatron.push(1, 0);
+		if(checkCollision()){
+			quatron.push(-1, 0);
+		}
+	}
+	
+	private void rushDown(){
+		
+	}
+	
+	private void rotate(){
+		if(quatron.rotate()){
+			
+		}
+	}
 
     @Override
     public void onPause(){
+		
         mRenderer.onPause();
         alive = false;
     }
@@ -70,15 +112,16 @@ public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
     @Override
     public void run() {
         alive = true;
+		fall = false;
         long mLastTime = System.currentTimeMillis();
         long nextGameTick = mLastTime + 1000;
+		long log = mLastTime + 1000;
+		
+		quatron = new Quatron(1, 2, Quatron.QuadType.O);
 		
 		
-		quatron = new Quatron(1, 2, Quatron.QuadType.L);
-		
-		
-		for(int x=0; x<grid.length; x++){
-			for(int y=0; y<grid.length; y++){
+		for(int x=0; x<GRID_WIDTH; x++){
+			for(int y=0; y<GRID_HEIGHT; y++){
 				grid[x][y] = 0;
 			}
 		}
@@ -93,10 +136,21 @@ public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
 
             // Get the amount of time the last frame took.
             long elapsed = now - mLastTime;
-
+			
+			if(log <= now){
+				Log.i("AA_logSHADER", "Shader log: "+mRenderer.logShader());
+			}
+			
             if(nextGameTick <= now){
                 gameTick();
-                nextGameTick += 1000;
+				if(fall){
+					nextGameTick += 50;
+				}
+				else{
+					nextGameTick += 1000;
+				}
+                
+				Log.i("AA_logSHADER", "hi test");
             }
 
             // Save the current time to see how long it took
@@ -104,30 +158,47 @@ public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
         }
     }
 	
+	private boolean checkCollision(){
+		for(int x=0; x<GRID_WIDTH; x++){
+			for(int y=0; y<GRID_HEIGHT; y++){
+				if(grid[x][y] > 0 && quatron.collides(x, y)){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	private void spawnQuatron(){
+		quatron = new Quatron(5, 12, Quatron.QuadType.L);
+	}
+	
 	private void freezeQuatron(){
+		if(prevent_freezing){
+			quatron.push(0, 1);
+			return;
+		}
+		fall = false;
 		for(Point p :quatron.getTransformedQuads(1)){
 			grid[p.x][p.y] = 1;
 		}
+		spawnQuatron();
 	}
 
     private void gameTick(){
         if(!quatron.push(0, -1)){
 			freezeQuatron();
-			quatron = new Quatron(5, 5, Quatron.QuadType.L);
 		}
 		
-		for(int x=0; x<grid.length; x++){
-			for(int y=0; y<grid.length; y++){
-				if(grid[x][y] > 0 && quatron.collides(x, y)){
-					freezeQuatron();
-					quatron = new Quatron(5, 20, Quatron.QuadType.L);
-				}
-			}
+		if(checkCollision()){
+			freezeQuatron();
 		}
 		
+		prevent_freezing = false;
         updateScene();
     }
-
+	
+	
     private void updateScene(){
         Scene scene = new Scene();
 
@@ -142,8 +213,10 @@ public class MyGLSurfaceView extends GLSurfaceView implements Runnable{
                     sprite.translate(x*Quatron.QUADSIZE, y*Quatron.QUADSIZE);
 					scene.addSprite(sprite);
                 }
+				
             }
         }
+		
         mRenderer.setScene(scene);
     }
 	

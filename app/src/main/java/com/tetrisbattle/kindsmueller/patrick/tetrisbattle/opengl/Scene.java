@@ -3,6 +3,7 @@ package com.tetrisbattle.kindsmueller.patrick.tetrisbattle.opengl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import android.util.*;
 
 /**
  * Created by Patrick on 21.02.2016.
@@ -31,6 +32,7 @@ public class Scene {
 
     public void addSprite(Sprite sprite){
         int offset = vertices.size()/3;
+		//Log.i("ADD_SPRITE", "offset = "+offset);
         for (short s :sprite.getIndices()) {
             //s += offset;
             indices.add((short) (s+offset));
@@ -38,10 +40,12 @@ public class Scene {
 
         for (float f :sprite.getTransformedVertices()) {
             vertices.add(f);
+			//Log.i("ADD_SPRITE", "vertex = "+f);
         }
 
         for (float f :sprite.getUVs()) {
             uvs.add(f);
+			//Log.i("ADD_SPRITE", "uv = "+f);
         }
 
 
@@ -68,13 +72,13 @@ public class Scene {
     }
 
     public short[] getIndices(){
-        short[] intArray = new short[indices.size()];
+        short[] shortArray = new short[indices.size()];
         int i = 0;
 
         for (Short s : indices) {
-            intArray[i++] = (s != null ? s : 0); // Or whatever default you want.
+            shortArray[i++] = (s != null ? s : (short)0); // Or whatever default you want.
         }
-        return intArray;
+        return shortArray;
     }
 
 }

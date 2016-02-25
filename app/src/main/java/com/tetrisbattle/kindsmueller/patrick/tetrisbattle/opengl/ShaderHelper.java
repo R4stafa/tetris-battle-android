@@ -1,6 +1,7 @@
 package com.tetrisbattle.kindsmueller.patrick.tetrisbattle.opengl;
 
 import android.opengl.GLES20;
+import android.util.*;
 
 public class ShaderHelper {
 
@@ -58,7 +59,10 @@ public class ShaderHelper {
         // add the source code to the shader and compile it
         GLES20.glShaderSource(shader, shaderCode);
         GLES20.glCompileShader(shader);
-
+		
+		String shaderlog = GLES20.glGetShaderInfoLog(500);
+		Log.i("AA_SHADER_LOG", shaderlog);
+		
         // return the shader
         return shader;
     }

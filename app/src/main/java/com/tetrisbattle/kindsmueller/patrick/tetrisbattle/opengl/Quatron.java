@@ -11,7 +11,7 @@ public class Quatron {
 
     public static float QUADSIZE;
 	
-	public enum QuadType{
+	public static enum QuadType{
 		L,
 		Li,
 		Z,
@@ -51,26 +51,40 @@ public class Quatron {
         }
         return false;
     }
+	
+	private void keepInsideGrid(){
+		for(Point p :quads){
+			int d = x+p.x;
+			if(d < 0){
+				x -= d;
+			}
+			d = x+p.x-MyGLSurfaceView.GRID_WIDTH;
+			if(d > 0){
+				x -= d;
+			}
+		}
+	}
 
     public boolean push(int x, int y){
         this.x += x;
         this.y += y;
 		
-		if(this.x < 0 || this.x > MyGLSurfaceView.GRID_WIDTH){
-			this.x -= x;
-		}
+		keepInsideGrid();
 		
 		if(this.y < 0)return false;
 		return true;
     }
 
-    public void rotate(){
+    public boolean rotate(){
+		boolean r = true;
 		for(int i=0; i<quads.length; i++){
 			PointF p = new PointF(quads[i].x-1.5f, quads[i].y-1.5f);
 			quads[i].x = (int)(1.5f+p.y);
 			quads[i].y = (int)(1.5f-p.x);
+			if(quads[i].y+y < 0)r = false;
 		}
-		
+		keepInsideGrid();
+		return r;
     }
 
     public Quatron(int x, int y, QuadType type){
